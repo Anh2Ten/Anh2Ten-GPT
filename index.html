@@ -1,70 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anh2Ten-GPT</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
-<body class="bg-gray-100 flex flex-col min-h-screen">
-    <div class="container mx-auto flex-grow p-4">
-        <h1 class="text-2xl font-bold mb-4">Anh2Ten-GPT</h1>
-        <div id="chat-container" class="border rounded-lg p-4 mb-4 overflow-y-auto"></div>
-    </div>
-    <div class="bg-white border-t border-gray-200 relative">
-        <div class="container mx-auto p-4 flex items-center">
-            <input type="text" id="user-input" class="flex-grow border rounded-l-lg p-2 focus:outline-none" placeholder="Type your message...">
-            <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg ml-2">Send</button>
-      
-            <div id="loading-indicator" class="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 hidden">
-                <div class="text-white">Loading...</div>
-            </div>
+<body class="d-flex justify-content-center align-items-center vh-100">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div id="chat-container">
+          <div id="chat-output"></div>
+          <div class="input-group mt-3">
+            <input type="text" id="user-input" class="form-control" placeholder="Type your message..." onkeydown="if(event.key==='Enter'){sendMessage()}">
+            <button class="btn btn-primary" type="button" onclick="sendMessage()">Send</button>
+          </div>
         </div>
+      </div>
     </div>
-<script type="text/javascript" charset="utf-8">
-document.addEventListener("DOMContentLoaded", function() {
-    const chatContainer = document.getElementById('chat-container');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const encodedUrl = 'aHR0cHM6Ly9kYWlseXRodW9uZ2hpZW4uY29tL2FwaS9haS8/bWVzc2FnZT0=';
-    sendBtn.addEventListener('click', async function() {
-        const message = userInput.value.trim();
-        if (message !== '') {
-            appendMessage('You', message);
-            userInput.value = ''; 
-            loadingIndicator.classList.remove('hidden');
-            try {
-                const response = await sendMessageToAPI(message);
-                appendMessage('Anh2Ten-GPT', response);
-            } catch (error) {
-                console.error('Error:', error);
-                appendMessage('Error', 'Anh2Ten-GPT Not response try again !');
-            } finally { 
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-    });
-    function appendMessage(sender, message) {
-        const messageElement = document.createElement('div');
-        messageElement.className = 'mb-2';
-        const formattedMessage = formatMessage(message);
-        messageElement.innerHTML = `<strong>${sender}:</strong> ${formattedMessage}`;
-        chatContainer.appendChild(messageElement);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+  </div>
+
+  <script>
+    var converter = new showdown.Converter();
+    var chatOutput = document.getElementById('chat-output');
+    var userInput = document.getElementById('user-input');
+
+    function sendMessage() {
+      var message = userInput.value.trim();
+      if (message === '') return;
+
+      fetch(`https://dailythuonghien.com/api/ai/?message=${encodeURIComponent(message)}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.text();
+        })
+        .then(data => { 
+          chatOutput.innerHTML = `
+            <div class="card mt-3">
+              <div class="card-body">
+                ${converter.makeHtml(data)}
+              </div>
+              <div class="card-footer">
+                <button class="btn btn-primary btn-sm" onclick="copyToClipboard()">Copy Result</button>
+              </div>
+            </div>`;
+        })
+        .catch(error => {
+          console.error('There was a problem with the fetch operation:', error);
+          chatOutput.innerHTML = `<p>Error: ${error.message}</p>`;
+        });
+
+      userInput.value = '';
     }
-    async function sendMessageToAPI(message) {
-        const decodedUrl = atob(encodedUrl);  
-        const response = await fetch(`${decodedUrl}${encodeURIComponent(message)}`);
-        if (!response.ok) {
-            throw new Error('Anh2Ten-GPT Not response try again !');
-        }
-        return await response.text();
+
+    function copyToClipboard() {
+      var resultText = document.querySelector('.card-body').innerText;
+      navigator.clipboard.writeText(resultText)
+        .then(() => { 
+          alert('Result copied to clipboard!');
+        })
+        .catch(err => {
+          console.error('Failed to copy result: ', err);
+        });
     }
-    function formatMessage(message) {
-        return message.replace(/\*(.*?)\*/g, '<span class="font-bold text-red">$1</span>'); 
-    }
-});
-</script>
+  </script>
 </body>
 </html>
